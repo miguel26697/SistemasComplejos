@@ -499,9 +499,3 @@ Interval;Transfer;Bandwidth;Retr;Cwnd
 497.00-498.00 sec;0.00 Bytes;0.00 bits/sec;1;1.39 KBytes
 498.00-499.00 sec;0.00 Bytes;0.00 bits/sec;5;6.97 KBytes
 499.00-500.00 sec;119 KBytes;971 Kbits/sec;0;12.6 KBytes
-- - - - - - - - -;- - - - - -;- - - - - - -;;
-Interval;Transfer;Bandwidth;Retr;
-0.00-500.00 sec;79.3 MBytes;1.33 Mbits/sec;524;sender
-0.00-500.00 sec;79.2 MBytes;1.33 Mbits/sec;;receiver
-;;;;
-Done.;;;;
