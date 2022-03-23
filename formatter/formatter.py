@@ -33,7 +33,9 @@ for filename in files:
                         lines=row.split(" ")
                         if(len(lines)>3):
                             if(lines[2]=="KBytes"): #clean columns 2 and 3
-                                lines[1]=str(float(lines[1])*1024)
+                                lines[1]=str(float(lines[1])*1024*8)
+                            if(lines[2]=="MBytes"): 
+                                lines[1]=str(float(lines[1])*1024*1024*8)
                             lines[2]=""
                             
                             if(lines[4]=="Mbits"):
@@ -43,7 +45,9 @@ for filename in files:
                             lines[4]=""
                             if(len(lines)>5):
                                 if(lines[7]=="KBytes"):
-                                    lines[6]=str(float(lines[6])*1024)
+                                    lines[6]=str(float(lines[6])*1024*8)
+                                if(lines[7]=="MBytes"):
+                                    lines[6]=str(float(lines[6])*1024*1024*8)
                                 lines[7]=""
                             row=" ".join(lines)
                             row=" ".join(row.split())
