@@ -61,6 +61,6 @@ for filename in files:
                 if(row!="- - - - - - - - - - - - - - - - - - - - - - - - -"):
                     txt+=row+"\n"
         count2+=1
-    f2=open(filename+".csv", "w")
+    f2=open(filename.split(".")[0]+".csv", "w")
     f2.write(txt)
     f2.close()
