@@ -1,32 +1,14 @@
 import random
-import itertools
+#import itertools
 import numpy as np
 import time
 import csv
 import pandas as pd
-import concurrent.futures
-import plotly.express as px
+#import concurrent.futures
+#import plotly.express as px
 
 truck_capacities=[320,250,200]
 truck_costs=[7900,6300,480]
-def getFitnessFromNumberOfSesions(strategy, numberOfSessions, numberOfActions, perceptions):
-    fitness = 0
-    N = 10
-    for sesion in range(numberOfSessions):
-        position = list(start)
-        board = generateBoard(N)
-        for iteration in range(numberOfActions):
-            actualPerception = [getNorth(position, board, N),
-                                getSouth(position, board, N),
-                                getWest(position, board, N),
-                                getEast(position, board, N),
-                                getCurrent(position, board, N)
-                                ]
-            status = perceptions.index(actualPerception)
-            action = strategy[status]
-            fitness, board, position = applyAction(
-                action, fitness, board, position, N)
-    return fitness
 
 def divide_chunks(l, n):
     """
@@ -39,23 +21,44 @@ def divide_chunks(l, n):
         yield l[i:i + n]
 
 def getFitness(strategy, cleaningSessions):
-    fitness = 1e6
-    trucks_strategy = list(divide_chunks(strategy, 3))
+    fitness = 0
+    trucks_strategy = list(divide_chunks(strategy, 15))
     for sesion in range(cleaningSessions):
         buildings = {n:[0,0] for n in range(sesion)}
         truck_capacities=[320,250,200]
         truck_costs=[7900,6300,480]
-        for weekday in range(7):
+        truck_uses=[0]*3
+        fitness+=1e6
+        for weekday in range(1,8):
             for building in buildings.keys():
                 buildings[building][0]=buildings[building][0]+ random.randint(0, 30)
                 buildings[building][1]=buildings[building][1]+ random.randint(0, 30)
-            for truck_strategy in trucks_strategy:
-                if(truck_strategy[0] == 0): #non biological risk 
-                    truck_capacities[0] = truck_capacities[0] - buildings[0][0]
+            for truck_strategy,truck in zip(trucks_strategy,list(range(0,2))):
+                pick_day,pick_night = truck_strategy[2*weekday-1],truck_strategy[2*weekday]
+                if(truck_strategy[0] == 0): #non biological risk
+                    for building in buildings.keys():
+                        if(pick_day == 1): 
+                            truck_capacities[truck] = truck_capacities[truck] - buildings[building][0]
+                            buildings[0][0]=0
+                            truck_uses[truck]+=1
+                            if(truck_capacities[truck] < 0):
+                                return -1e9
+                        elif(pick_night == 1):
+                            truck_capacities[truck] = truck_capacities[truck] - buildings[building][0]
+                            buildings[0][0]=0
+                            truck_uses[truck]+=1
+                            if(truck_capacities[truck] < 0):
+                                return -1e9
                 else: #biological risk
-                    truck_capacities[0] = truck_capacities[0] - buildings[0][1]
-
-    
+                    for building in buildings.keys():
+                        if(pick_night == 1 or weekday==5 or weekday==6):
+                            truck_capacities[truck] = truck_capacities[truck] - buildings[building][1]
+                            buildings[0][1]=0
+                            truck_uses[truck]+=1
+                            if(truck_capacities[0] < 0):
+                                return -1e9
+        cost_function = sum([cost*use for cost,use in zip(truck_costs,truck_uses)])
+        fitness-=cost_function   
     fitness /= cleaningSessions
     return fitness
 
@@ -82,15 +85,6 @@ def generateStrategies(n, length):
         randomlist = [random.randint(0, 1) for _ in range(length)]
         strategies.append(randomlist)
     return strategies
-
-
-def generateBoard(N):
-    board = []
-    def putCan(): return int(random.random() > 0.5)
-    for i in range(N):
-        line = [putCan() for j in range(N)]
-        board.append(line)
-    return board
 
 
 def mate(father, mother, mutationFunction=defaultMutation):
@@ -155,8 +149,7 @@ def run(f, sizeGene, mutationFunction=defaultMutation, generateNewPopulation=def
     population = []
     for generation in range(500):
         print("Starting generation ", generation)
-        population = tryAllStrategies(
-            strategies, population, cleaningSessions)
+        population = tryAllStrategies(strategies, population, cleaningSessions)
         population.sort(reverse=True, key=lambda y: y[1])
         maxFitness.append(population[0][1])  # for painting
         writer.writerow([generation, population[0][0], population[0][1]])
@@ -172,40 +165,7 @@ def run(f, sizeGene, mutationFunction=defaultMutation, generateNewPopulation=def
     f.close()
 
 
-def applyAction(action, fitness, board, position, N):
-    if action == 0:
-        newPos = (position[0], position[1]-1)
-        if(newPos[1] < 0):
-            fitness -= 5
-            newPos = position
-    elif action == 1:
-        newPos = (position[0], position[1]+1)
-        if(newPos[1] > N-1):
-            fitness -= 5
-            newPos = position
-    elif action == 2:
-        newPos = (position[0]-1, position[1])
-        if(newPos[0] < 0):
-            fitness -= 5
-            newPos = position
-    elif action == 3:
-        newPos = (position[0]+1, position[1])
-        if(newPos[0] > N-1):
-            fitness -= 5
-            newPos = position
-    elif action == 4:
-        newPos = position
-    elif action == 5:
-        newPos = position
-        if(board[position[0]][position[1]]):
-            fitness += 10
-            board[position[0]][position[1]] = 0
-        else:
-            fitness -= 1
-    elif action == 6:
-        randAction = random.randint(0, 3)
-        return applyAction(randAction, fitness, board, position, N)
-    return (fitness, board, newPos)
+
 
 
 def plotFitnes(fitnesScore):
