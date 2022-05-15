@@ -1,12 +1,10 @@
 import random
-#import itertools
 import numpy as np
 import time
 import csv
 import pandas as pd
-#import concurrent.futures
-#import plotly.express as px
 import math
+import matplotlib.pyplot as plt
 
 truck_capacities=[320,250,200]
 truck_costs=[7900,6300,480]
@@ -90,7 +88,7 @@ def newDefaultMutation(children):
     for i in range(len(children)):
         for j in range(len(children[i])):
             if(random.random()<0.05): # Mutation
-                children[i][j]=random.randint(0,6)
+                children[i][j]=random.randint(0,1)
     return children
 def inversion(children):
     for child in children:
@@ -103,7 +101,7 @@ def inversion(children):
 def generateStrategies(n, length):
     strategies = []
     for strategy in range(n):
-        randomlist = [random.randint(0, 1) for _ in range(length)]
+        randomlist = [int(random.random()>0.1) for _ in range(length)]
         strategies.append(randomlist)
     return strategies
 
@@ -190,19 +188,16 @@ def run(f, sizeGene, mutationFunction=defaultMutation, generateNewPopulation=def
 
 
 
-def plotFitnes(fitnesScore):
-    generation = [fitnesScore.index(n) + 1 for n in fitnesScore]
-
-    df = pd.DataFrame(dict(
-        Generation=generation,
-        y=fitnesScore
-    ))
-    fig = px.line(df, x="Generation", y="y", title="Fitness vs Generation", markers=True,
-                  labels={
-                      "y": "Best fitness in population"
-                  })
-    fig.show()
-    plotFitnes(fitnesScore)
+def plotFitness():
+    f = open("generationData.csv","r",encoding="utf-8")
+    data = pd.read_csv(f)
+    f.close()
+    plt.plot(data['generation'],data['fitness'])
+    plt.title("Fitness across the generations")
+    plt.xlabel("Generation")
+    plt.ylabel("Best fitness of the generation")
+    plt.savefig('GA.png')
+    plt.show()
 
 def multipleCrossover(father,mother,mutationFunction=defaultMutation):
     genY,genX = father,mother
@@ -221,4 +216,5 @@ def multipleCrossover(father,mother,mutationFunction=defaultMutation):
     return children
 if __name__ == '__main__':
     f = open("generationData.csv", "w")
-    run(f, 45,mate=multipleCrossover,mutationFunction=inversion)
+    run(f, 45,mate=multipleCrossover,mutationFunction=newDefaultMutation)
+    plotFitness()
