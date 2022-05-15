@@ -6,9 +6,11 @@ import csv
 import pandas as pd
 #import concurrent.futures
 #import plotly.express as px
+import math
 
 truck_capacities=[320,250,200]
 truck_costs=[7900,6300,480]
+
 
 def divide_chunks(l, n):
     """
@@ -28,24 +30,23 @@ def getFitness(strategy, cleaningSessions):
         truck_capacities=[320,250,200]
         truck_costs=[7900,6300,480]
         truck_uses=[0]*3
-        fitness+=1e6
         for weekday in range(1,8):
             for building in buildings.keys():
-                buildings[building][0]=buildings[building][0]+ random.randint(0, 30)
-                buildings[building][1]=buildings[building][1]+ random.randint(0, 30)
+                buildings[building][0]=buildings[building][0]+ random.randint(0, 15)
+                buildings[building][1]=buildings[building][1]+ random.randint(0, 15)
             for truck_strategy,truck in zip(trucks_strategy,list(range(0,2))):
                 pick_day,pick_night = truck_strategy[2*weekday-1],truck_strategy[2*weekday]
                 if(truck_strategy[0] == 0): #non biological risk
                     for building in buildings.keys():
                         if(pick_day == 1): 
                             truck_capacities[truck] = truck_capacities[truck] - buildings[building][0]
-                            buildings[0][0]=0
+                            buildings[building][0]=0
                             truck_uses[truck]+=1
                             if(truck_capacities[truck] < 0):
                                 return -1e9
                         elif(pick_night == 1):
                             truck_capacities[truck] = truck_capacities[truck] - buildings[building][0]
-                            buildings[0][0]=0
+                            buildings[building][0]=0
                             truck_uses[truck]+=1
                             if(truck_capacities[truck] < 0):
                                 return -1e9
@@ -53,10 +54,12 @@ def getFitness(strategy, cleaningSessions):
                     for building in buildings.keys():
                         if(pick_night == 1 or weekday==5 or weekday==6):
                             truck_capacities[truck] = truck_capacities[truck] - buildings[building][1]
-                            buildings[0][1]=0
+                            buildings[building][1]=0
                             truck_uses[truck]+=1
-                            if(truck_capacities[0] < 0):
+                            if(truck_capacities[truck] < 0):
                                 return -1e9
+        if (sum([v[0]+v[1] for v in buildings.values()])<30):
+            fitness+=2e6
         cost_function = sum([cost*use for cost,use in zip(truck_costs,truck_uses)])
         fitness-=cost_function   
     fitness /= cleaningSessions
@@ -77,7 +80,25 @@ def defaultMutation(children):
         if(random.random() < 0.01):  # Mutation
             children[i][random.randint(0, len(children[i])-1)] = random.randint(0, 1)
     return children
-
+def swapMutation(children):
+    for child in children:
+        if (random.random()<0.2):
+            indexToChange=(random.randint(0,len(child)-1),random.randint(0,len(child)-1))
+            child[indexToChange[0]],child[indexToChange[1]]=child[indexToChange[1]],child[indexToChange[0]]
+    return children
+def newDefaultMutation(children):
+    for i in range(len(children)):
+        for j in range(len(children[i])):
+            if(random.random()<0.05): # Mutation
+                children[i][j]=random.randint(0,6)
+    return children
+def inversion(children):
+    for child in children:
+        if (random.random()<0.05):
+            value=random.randint(1,len(child)//2)
+            interval=(value,value+random.randint(0,len(child)//2))
+            child[interval[0]:interval[1]]=child[interval[1]-1:interval[0]-1:-1]
+    return children
 
 def generateStrategies(n, length):
     strategies = []
@@ -138,6 +159,7 @@ def run(f, sizeGene, mutationFunction=defaultMutation, generateNewPopulation=def
 
     """
     writer = csv.writer(f)
+    writer.writerow(["generation", "gene", "fitness"])
     timeStart = time.time()
     cleaningSessions = 10
     firstStrategies = generateStrategies(200, sizeGene)
@@ -182,7 +204,21 @@ def plotFitnes(fitnesScore):
     fig.show()
     plotFitnes(fitnesScore)
 
-
+def multipleCrossover(father,mother,mutationFunction=defaultMutation):
+    genY,genX = father,mother
+    nOfslices=random.randint(2,2*int(math.sqrt(len(father))))
+    genYWithSlices = list(divide_chunks(genY,nOfslices))
+    genXWithSlices = list(divide_chunks(genX,nOfslices))
+    children=[[],[]]
+    for i in range(len(genXWithSlices)):
+        if i%2==0:
+            children[0]+=genXWithSlices[i]
+            children[1]+=genYWithSlices[i]
+        else:
+            children[0]+=genYWithSlices[i]
+            children[1]+=genXWithSlices[i]
+    children=mutationFunction(children)
+    return children
 if __name__ == '__main__':
     f = open("generationData.csv", "w")
-    run(f, 45)
+    run(f, 45,mate=multipleCrossover,mutationFunction=inversion)
