@@ -1,5 +1,5 @@
 import re
-files =["file.txt"] #,""
+files =["file.txt","serverFile.txt"] #,""
 for filename in files:
     f = open(filename, "r")
     count=0
@@ -16,7 +16,7 @@ for filename in files:
         if(count2==0):
             pass
         if not unlock:
-            match=re.findall(r'(Interval\s*Transfer\s*Bitrate\s* Total\s*Datagrams)', row)
+            match=re.findall(r'(Interval\s*Transfer\s*Bitrate\s* Total\s*Datagrams|Interval\s*Transfer\s*Bitrate\s*Jitter\s*Lost/Total Datagrams)', row)
             if match:
                 unlock=True
         if unlock:
@@ -27,6 +27,7 @@ for filename in files:
                     if(match[0]!="[ ID]"):
                         row=row.replace(match[0], "")
                         row=row.replace("sec", "")
+                        row=row.replace("ms", "")
                         row=row.replace("/", "")
                         row=row.strip()
                         row=" ".join(row.split())
